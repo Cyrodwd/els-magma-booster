@@ -21,7 +21,7 @@ bool update(float dt)
 
 void finish()
 {
-    //els_magma_booster_game.finish();
+    els_magma_booster_game.finish();
 }
 
 mixin runGame!(ready, update, finish);

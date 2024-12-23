@@ -11,7 +11,7 @@ import parin.timer;
  * específico al completarse el temporizador.
 */
 
-// 0.1f => Un temporizador con una duración de cero para bajo, no tiene sentido.
+/// 0.1f => Casi instantáneo, pero un cero o valor negativo no hacen un temporizador.
 enum float EMB_TIMER_MIN_DURATION = 0.1f;
 
 /** 
@@ -27,7 +27,7 @@ struct EMB_Timer
     /// Tiempo transcurrido
     private float elapsed;
 
-    /// Establece un nuevo temporizador de una duración mínima de 0.1 segundos (No cero ni valores negativos)
+    /// Establece un nuevo temporizador (No valores negativos)
     public this(float duration)
     {
         running = false;
@@ -126,5 +126,11 @@ struct EMB_Timer
     public float get_remaining()
     {
         return duration - elapsed;
+    }
+
+    /// Si el temporizador está definido
+    public bool is_valid()
+    {
+        return is(this == struct);
     }
 }

@@ -2,7 +2,9 @@ module components.emb_game;
 
 import parin;
 import scenes.emb_gamescene;
-import wolfmanager : WolfConstManager;
+import components.emb_utils;
+
+immutable Vec2 fps_position = Vec2(0f, EMB_ScreenConfig.Dimensions.height - 10);
 
 public struct EMB_Game
 {
@@ -11,10 +13,9 @@ public struct EMB_Game
     // Gestor de escenas
     SceneManager emb_scene_manager;
 
-
     void setup(bool pixel_perfect)
     {
-        lockResolution(WolfConstManager.resolution_width, WolfConstManager.resolution_height);
+        lockResolution(EMB_ScreenConfig.Dimensions.width, EMB_ScreenConfig.Dimensions.height);
         setIsPixelPerfect(pixel_perfect);
 
         emb_scene_manager.enter!EMB_GameScene();
@@ -22,6 +23,7 @@ public struct EMB_Game
 
     bool update(float dt)
     {
+        debug drawDebugText(format("FRAMES PER SECOND: {}", fps()), fps_position);
         emb_scene_manager.update(dt);
         return false;
     }

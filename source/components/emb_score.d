@@ -7,12 +7,19 @@ module components.emb_score;
  * adaptado a las necesidades de esto.
 */
 
-import joka.math : max;
+import joka.math : clamp, max;
+import parin : format, Vec2, drawDebugText;
 
 
-enum ubyte MIN_SCORE_MULTIPLIER = 1;
-enum ubyte SCORE_AMOUNT = 100;
-enum int MAX_SCORE_AMOUNT = 900_900_900;
+public enum ubyte EMB_MIN_SCORE_MULTIPLIER = 1;
+public enum ubyte EMB_MAX_SCORE_MULTIPLIER = 10;
+
+/// El valor de puntaje que maneja el gestor de puntajes.
+public enum ubyte EMB_SCORE_AMOUNT = 100;
+/// Bueno, mejor ser precavido.
+public enum int EMB_MIN_SCORE_AMOUNT = -10_000;
+/// Un número extremadamente grande. Debes tener mucha paciencia o de plano estar haciendo trampas lmao.
+public enum int EMB_MAX_SCORE_AMOUNT = 900_900_900;
 
 struct EMB_ScoreManager
 {
@@ -21,32 +28,37 @@ struct EMB_ScoreManager
 
     public this(ubyte multiplier)
     {
-        this.multiplier = max(multiplier, MIN_SCORE_MULTIPLIER);
+        this.multiplier = clamp(multiplier, EMB_MIN_SCORE_MULTIPLIER, EMB_MAX_SCORE_MULTIPLIER);
         score = 0;
+    }
+
+    public void draw()
+    {
+        drawDebugText(format("SCORE: {}", score), Vec2(0));
     }
 
     /// Agrega puntos de 100 o más dependiendo del multiplicador de puntaje
     public void add()
     {
-        if (score < MAX_SCORE_AMOUNT)
+        if (score < EMB_MAX_SCORE_AMOUNT)
         {
-            score += SCORE_AMOUNT * multiplier;
+            score += clamp(EMB_SCORE_AMOUNT * multiplier, EMB_MIN_SCORE_AMOUNT, EMB_MAX_SCORE_AMOUNT);
         }
     }
 
     /// Resta 100 puntos multiplicado por la cantidad de veces establecida
-    public void subtract(ubyte times = MIN_SCORE_MULTIPLIER)
+    public void subtract(ubyte times = EMB_MIN_SCORE_MULTIPLIER)
     {
         if (score > 0)
         {
-            score -= SCORE_AMOUNT * max(times, MIN_SCORE_MULTIPLIER);
+            score -= EMB_SCORE_AMOUNT * max(times, EMB_MIN_SCORE_MULTIPLIER);
         }
     }
 
     // Establece el multiplicador de mínimo 1.
     public void set_multiplier(ubyte multiplier)
     {
-        this.multiplier = max(multiplier, MIN_SCORE_MULTIPLIER);
+        this.multiplier = clamp(multiplier, EMB_MIN_SCORE_MULTIPLIER, EMB_MAX_SCORE_MULTIPLIER);
     }
 
 
@@ -68,7 +80,7 @@ struct EMB_ScoreManager
 
     public bool has_max_score()
     {
-        return score >= MAX_SCORE_AMOUNT;
+        return score >= EMB_MAX_SCORE_AMOUNT;
     }
 }
 

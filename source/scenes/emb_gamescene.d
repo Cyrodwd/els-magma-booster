@@ -15,21 +15,19 @@ public struct EMB_GameScene
 
     // Recursos de la escena
     private EMB_Player els_player;
-    private EMB_StaticAnomaly red_lightbeam;
+    private EMB_StaticAnomaly score_ray_test;
 
     EMB_ScoreManager emb_score_manager;
     EMB_Timer emb_score_timer;
 
     // Funciones miembro privados (Para las anomalías)
-    void red_lightbeam_effect()
+    void score_ray_test_effect()
     {
-        println("Score multiplier: 4x");
-        emb_score_manager.set_multiplier(multiplier: 4);
+        emb_score_manager.set_multiplier(EMB_MAX_SCORE_MULTIPLIER);
     }
 
     void reset_score_manager()
     {
-        println("Score multiplier: 1x (Default)");
         emb_score_manager.set_multiplier(multiplier: 1);
     }
 
@@ -37,16 +35,18 @@ public struct EMB_GameScene
     public void ready()
     {
         emb_score_manager = EMB_ScoreManager(multiplier: 1); // Por defecto
-        emb_score_timer = EMB_Timer(1f);
+        emb_score_timer = EMB_Timer(duration: 1f);
 
         els_player.setup();
-        red_lightbeam = new EMB_StaticAnomaly(EMB_AnomalyDirection.horizontal, on_spawn_time: 3f, on_screen_time:  4f,
-            effect: &red_lightbeam_effect);
 
-        if (red_lightbeam !is null)
+        // Anomalía instantánea
+        score_ray_test = new EMB_StaticAnomaly(EMB_AnomalyDirection.horizontal, on_spawn_time: 3f, on_screen_time:  4f,
+            effect: &score_ray_test_effect, 8f);
+
+        if (score_ray_test !is null)
         {
-            red_lightbeam.set_reverse_effect(&reset_score_manager);
-            red_lightbeam.reset();
+            score_ray_test.set_reverse_effect(&reset_score_manager);
+            score_ray_test.reset();
         }
 
         emb_score_timer.start();
@@ -57,7 +57,7 @@ public struct EMB_GameScene
         update_score_timer(dt);
 
         els_player.update(dt);
-        red_lightbeam.update(dt, els_player);
+        score_ray_test.update(dt, els_player);
 
         draw();
 
@@ -67,12 +67,13 @@ public struct EMB_GameScene
     private void draw()
     {
         els_player.draw();
-        red_lightbeam.draw();
+        score_ray_test.draw();
+        emb_score_manager.draw();
     }
 
     public void finish()
     {
-        destroy(red_lightbeam);
+        destroy(score_ray_test);
     }
 
     private void update_score_timer(float dt)
@@ -84,8 +85,6 @@ public struct EMB_GameScene
         if (emb_score_timer.has_completed())
         {
             emb_score_manager.add();
-            println("PUNTAJE: ", emb_score_manager.get_score());
-
             emb_score_timer.start();
         }
     }

@@ -1,10 +1,11 @@
 module els.player;
 
 import parin;
-import wolfmanager;
 import std.stdint : uint8_t;
+
 import components.emb_timer;
 import components.emb_score;
+import components.emb_utils;
 
 public struct EMB_Player
 {
@@ -19,6 +20,7 @@ public struct EMB_Player
     Vec2 position;
 
     Rect hitbox;
+    TextureId texture;
 
     DrawOptions options;
 
@@ -34,40 +36,43 @@ public struct EMB_Player
         velocity = Vec2.zero;
         position = Vec2.zero;
 
-        hitbox = Rect(Vec2.zero, Vec2(32));
-        options.color = red;
+        const Vec2 hitboxSize = Vec2(34, 52);
+        hitbox = Rect(Vec2.zero, hitboxSize);
+        texture = loadTexture("ELS34.PNG");
     }
 
     public void update(float dt)
     {
-        updateInput();
-        updateGravity(dt);
-        updatePhysics(dt);
+        update_input();
+        update_gravity(dt);
+        update_physics(dt);
+        update_sprite(dt);
     }
 
     public void draw()
     {
-        drawRect(hitbox, options.color);
+        debug { drawRect(hitbox); }
+        drawTexture(texture, position, options);
     }
 
-    pragma(inline, true) private void updateGravity(float dt)
+    pragma(inline, true) private void update_gravity(float dt)
     {
-        velocity.y += WolfConstManager.gravity * dt;
+        velocity.y += EMB_PhysicsConfig.gravity * dt;
     }
 
-    private void updateInput()
+    private void update_input()
     {
         // Movimiento horizontal
-        direction = WolfKeysManager.is_player_right() - WolfKeysManager.is_player_left();
+        direction = EMB_PlayerInput.right_keydown() - EMB_PlayerInput.left_keydown();
 
         // Movimiento vertical
-        if (WolfKeysManager.is_player_boost())
+        if (EMB_PlayerInput.boost_keydown())
         {
             velocity.y = -boost_impulse;
         }
     }
 
-    private void updatePhysics(float dt)
+    private void update_physics(float dt)
     {
         if (direction != 0)
         {
@@ -84,5 +89,11 @@ public struct EMB_Player
 
         position += velocity * Vec2(dt);
         hitbox.position = position;
+    }
+
+    private void update_sprite(float dt)
+    {
+        const float resolution = EMB_ScreenConfig.get_object_center(position, hitbox.size).x;
+        options.flip = position.x < resolution ? Flip.none : Flip.x;
     }
 }

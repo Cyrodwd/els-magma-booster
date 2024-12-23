@@ -1,12 +1,17 @@
 module anomaly.base;
 
-import parin;
-import els.player;
-import wolfmanager;
-import anomaly.config;
 import core.bitop : popcnt;
 import std.stdint : uint8_t;
+
+import parin;
+
+import els.player;
+import anomaly.config;
+
 import components.emb_timer;
+import components.emb_utils;
+
+import anomaly.effect;
 
 /* 
  * NOTA: NO muevas las líneas de 'x_timer.start()' después de 'x_timer.update(dt)', ya que esto provocará que el temporizador se reinicie justo
@@ -27,13 +32,10 @@ abstract class EMB_Anomaly
 
     // Temporizadores
     protected EMB_Timer on_spawn_timer;
-    protected EMB_Timer on_screen_timer;
+    protected EMB_Timer on_active_timer;
     protected EMB_Timer on_disappear_timer;
 
-    protected EMB_Timer effect_timer;
-
-    protected void delegate() effect;
-    protected void delegate() reverse_effect;
+    protected EMB_AnomalyEffect effect_handler;
 
     /// Estado actual de la anomalía.
     protected EMB_AnomalyState current_state;
@@ -44,27 +46,23 @@ abstract class EMB_Anomaly
     // Métodos públicos
     // --------------------------------
 
-    public this(uint8_t directions, float on_spawn_time, float on_screen_time,
-        void delegate() effect = null)
+    public this(uint8_t directions, float on_spawn_time, float on_active_time,
+        void delegate() effect = null, float effect_timer = 0f)
     {
-        hitbox = Rect(Vec2.zero, Vec2(WolfConstManager.sprite_size));
+        hitbox = Rect(Vec2.zero, Vec2(EMB_SpriteConfig.default_size));
         available_directions = directions;
         
         on_spawn_timer = EMB_Timer(on_spawn_time);
-        on_screen_timer = EMB_Timer(on_screen_time);
+        on_active_timer = EMB_Timer(on_active_time);
         on_disappear_timer = EMB_Timer(on_disappear_time);
 
-        this.effect = effect;
-
-        // Valores predeterminados (Modificables mediante setters)
-        effect_timer = EMB_Timer(5f);
-        reverse_effect = null;
-        effect_is_active = false;
+        effect_handler = EMB_AnomalyEffect(effect, null, effect_timer);
     }
 
     public void update(float dt, ref EMB_Player player)
     {
-        if (effect_is_active) update_effect_timer(dt);
+        if (effect_handler.is_effect_active())
+            effect_handler.update(dt);
 
         update_state(dt, player);
         hitbox.position = position;
@@ -76,20 +74,26 @@ abstract class EMB_Anomaly
     {
         position = Vec2.zero;
         current_state = EMB_AnomalyState.none;
-        hitbox.size = Vec2(WolfConstManager.sprite_size);
+        hitbox.size = Vec2(EMB_SpriteConfig.default_size);
     }
 
-    public void set_reverse_effect(void delegate() reverse_effect)
-    {
-        if (reverse_effect !is null && this.reverse_effect !is reverse_effect)
-        {
-            this.reverse_effect = reverse_effect;
-        }
-    }
+    // -------------------------------
+    // Setters
+    // -------------------------------
 
     public void set_effect_time(float time)
     {
-        effect_timer.set_duration(time);
+        effect_handler.set_duration(time);
+    }
+
+    public void set_effect(void delegate() effect)
+    {
+        effect_handler.set_apply_effect(effect);
+    }
+
+    public void set_reverse_effect(void delegate() effect)
+    {
+        effect_handler.set_reverse_effect(effect);
     }
 
     // ------------------------------
@@ -155,8 +159,8 @@ abstract class EMB_Anomaly
 
     protected void update_on_active(float dt, ref EMB_Player player)
     {
-        on_screen_timer.start();
-        on_screen_timer.update(dt);
+        on_active_timer.start();
+        on_active_timer.update(dt);
 
         handle_collision(player);
     }
@@ -171,29 +175,8 @@ abstract class EMB_Anomaly
     {
         if (hitbox.hasIntersection(player.hitbox))
         {
-            if (effect != null && !effect_is_active)
-            {
-                effect();
-                effect_is_active = true;
-            }
-
+            effect_handler.trigger();
             // Reinicia la anomalía
-            reset();
-        }
-    }
-
-    private void update_effect_timer(float dt)
-    {
-        effect_timer.start();
-        effect_timer.update(dt);
-
-        if (effect_timer.has_completed())
-        {
-            if (reverse_effect !is null) reverse_effect();
-
-            effect_is_active = false;
-            effect_timer.reset();
-
             reset();
         }
     }
